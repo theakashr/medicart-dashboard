@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="MediCart Login - Secure Medical Shop Management Portal">
+  <title>MediCart | Login</title>
+  <link rel="stylesheet" href="/css/global.css">
+  <link rel="stylesheet" href="/css/auth.css">
+</head>
+<body>
+
+  <!-- Toast Container -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <!-- Loading Overlay -->
+  <div class="auth-loader hidden" id="authLoader">
+    <div class="auth-spinner"></div>
+    <div class="auth-loader__text">Authenticating...</div>
+  </div>
+
+  <!-- Floating Background Icons -->
+  <div class="auth-bg-icons" id="bgIcons"></div>
+
+  <!-- Login Page -->
+  <div class="auth-page">
+    <div class="auth-card">
+
+      <!-- Header -->
+      <div class="auth-header">
+        <div class="auth-logo">M+</div>
+        <h1 class="auth-title">Welcome to MediCart</h1>
+        <p class="auth-subtitle">Secure Medical Shop Management Portal</p>
+      </div>
+
+      <!-- Error Message -->
+      <div class="auth-error hidden" id="authError"></div>
+
+      <!-- Login Form -->
+      <form class="auth-form" id="loginForm" onsubmit="handleLogin(event)">
+
+        <!-- Email Field -->
+        <div class="auth-field">
+          <label class="auth-label" for="loginEmail">Email Address</label>
+          <div class="auth-input-icon">
+            <span class="auth-input-icon__icon">📧</span>
+            <input
+              type="email"
+              class="auth-input"
+              id="loginEmail"
+              placeholder="admin@medicart.com"
+              required
+              autocomplete="email"
+            >
+          </div>
+        </div>
+
+        <!-- Password Field -->
+        <div class="auth-field">
+          <label class="auth-label" for="loginPassword">Password</label>
+          <div class="auth-input-icon">
+            <span class="auth-input-icon__icon">🔒</span>
+            <input
+              type="password"
+              class="auth-input"
+              id="loginPassword"
+              placeholder="Enter your password"
+              required
+              minlength="6"
+              autocomplete="current-password"
+            >
+            <button type="button" class="auth-password-toggle" onclick="togglePassword('loginPassword', this)">👁️</button>
+          </div>
+        </div>
+
+        <!-- Remember Me & Forgot Password -->
+        <div class="auth-links">
+          <label class="auth-remember">
+            <input type="checkbox" id="rememberMe" checked> Remember me
+          </label>
+          <a href="#" class="auth-link" onclick="handleForgotPassword(event)">Forgot Password?</a>
+        </div>
+
+        <!-- Login Button -->
+        <button type="submit" class="auth-btn auth-btn--primary" id="btnLogin">
+          🔐 Login to Dashboard
+        </button>
+      </form>
+
+      <!-- Divider -->
+      <div class="auth-divider" style="margin: 1.25rem 0;">or continue with</div>
+
+      <!-- Google Sign In -->
+      <button class="auth-btn auth-btn--google" onclick="signInWithGoogle()" id="btnGoogle">
+        <svg class="google-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
+          <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+          <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+          <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+        </svg>
+        Continue with Google
+      </button>
+
+      <!-- Signup Link -->
+      <div class="auth-footer" style="margin-top: 1.25rem;">
+        Don't have an account? <a href="/signup.html">Create Account</a>
+      </div>
+
+      <!-- Secure Badge -->
+      <div class="auth-secure">
+        🔒 Secured with Firebase Authentication
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+
+  <!-- App Scripts -->
+  <script src="/js/firebase-config.js"></script>
+  <script src="/js/auth.js"></script>
+
+  <script>
+    // Redirect if already logged in
+    redirectIfLoggedIn();
+
+    // ── Handle Login Form Submit ───────────────────────────
+    function handleLogin(e) {
+      e.preventDefault();
+      document.getElementById('authError').classList.add('hidden');
+
+      const email = document.getElementById('loginEmail').value.trim();
+      const password = document.getElementById('loginPassword').value;
+
+      if (!email || !password) {
+        showAuthToast('Please fill in all fields.', 'warning');
+        return;
+      }
+
+      loginWithEmail(email, password);
+    }
+
+    // ── Handle Forgot Password ─────────────────────────────
+    function handleForgotPassword(e) {
+      e.preventDefault();
+      const email = document.getElementById('loginEmail').value.trim();
+
+      if (!email) {
+        showAuthToast('Enter your email address first.', 'warning');
+        document.getElementById('loginEmail').focus();
+        return;
+      }
+
+      resetPassword(email);
+    }
+
+    // ── Toggle Password Visibility ─────────────────────────
+    function togglePassword(inputId, btn) {
+      const input = document.getElementById(inputId);
+      if (input.type === 'password') {
+        input.type = 'text';
+        btn.textContent = '🙈';
+      } else {
+        input.type = 'password';
+        btn.textContent = '👁️';
+      }
+    }
+
+    // ── Floating Background Icons ──────────────────────────
+    (function createBgIcons() {
+      const icons = ['💊', '🏥', '💉', '🩺', '🧬', '🩹', '⚕️', '🔬', '🧪', '❤️'];
+      const container = document.getElementById('bgIcons');
+      for (let i = 0; i < 15; i++) {
+        const span = document.createElement('span');
+        span.textContent = icons[i % icons.length];
+        span.style.left = Math.random() * 100 + '%';
+        span.style.animationDelay = Math.random() * 15 + 's';
+        span.style.animationDuration = (15 + Math.random() * 10) + 's';
+        span.style.fontSize = (1 + Math.random() * 1.5) + 'rem';
+        container.appendChild(span);
+      }
+    })();
+  </script>
+</body>
+</html>

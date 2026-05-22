@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="MediCart - Create your admin account">
+  <title>MediCart | Create Account</title>
+  <link rel="stylesheet" href="/css/global.css">
+  <link rel="stylesheet" href="/css/auth.css">
+</head>
+<body>
+
+  <div id="toastContainer" class="toast-container"></div>
+
+  <div class="auth-loader hidden" id="authLoader">
+    <div class="auth-spinner"></div>
+    <div class="auth-loader__text">Creating your account...</div>
+  </div>
+
+  <div class="auth-bg-icons" id="bgIcons"></div>
+
+  <div class="auth-page">
+    <div class="auth-card">
+
+      <!-- Header -->
+      <div class="auth-header">
+        <div class="auth-logo">M+</div>
+        <h1 class="auth-title">Create Account</h1>
+        <p class="auth-subtitle">Set up your MediCart admin portal</p>
+      </div>
+
+      <!-- Error Message -->
+      <div class="auth-error hidden" id="authError"></div>
+
+      <!-- Signup Form -->
+      <form class="auth-form" id="signupForm" onsubmit="handleSignup(event)">
+
+        <!-- Full Name -->
+        <div class="auth-field">
+          <label class="auth-label" for="signupName">Full Name</label>
+          <div class="auth-input-icon">
+            <span class="auth-input-icon__icon">👤</span>
+            <input type="text" class="auth-input" id="signupName" placeholder="Dr. Akash R" required autocomplete="name">
+          </div>
+        </div>
+
+        <!-- Email -->
+        <div class="auth-field">
+          <label class="auth-label" for="signupEmail">Email Address</label>
+          <div class="auth-input-icon">
+            <span class="auth-input-icon__icon">📧</span>
+            <input type="email" class="auth-input" id="signupEmail" placeholder="admin@medicart.com" required autocomplete="email">
+          </div>
+        </div>
+
+        <!-- Password -->
+        <div class="auth-field">
+          <label class="auth-label" for="signupPassword">Password</label>
+          <div class="auth-input-icon">
+            <span class="auth-input-icon__icon">🔒</span>
+            <input type="password" class="auth-input" id="signupPassword" placeholder="Min 6 characters" required minlength="6" autocomplete="new-password" oninput="checkPasswordStrength(this.value)">
+            <button type="button" class="auth-password-toggle" onclick="togglePassword('signupPassword', this)">👁️</button>
+          </div>
+          <!-- Password Strength Indicator -->
+          <div class="password-strength" id="passwordStrength">
+            <div class="password-strength__bar" id="str1"></div>
+            <div class="password-strength__bar" id="str2"></div>
+            <div class="password-strength__bar" id="str3"></div>
+            <div class="password-strength__bar" id="str4"></div>
+          </div>
+          <div class="password-strength__text" id="strengthText" style="color:#64748b;"></div>
+        </div>
+
+        <!-- Confirm Password -->
+        <div class="auth-field">
+          <label class="auth-label" for="signupConfirm">Confirm Password</label>
+          <div class="auth-input-icon">
+            <span class="auth-input-icon__icon">🔐</span>
+            <input type="password" class="auth-input" id="signupConfirm" placeholder="Re-enter password" required minlength="6" autocomplete="new-password">
+          </div>
+        </div>
+
+        <!-- Submit -->
+        <button type="submit" class="auth-btn auth-btn--primary" id="btnSignup">
+          ✨ Create Account
+        </button>
+      </form>
+
+      <!-- Divider -->
+      <div class="auth-divider" style="margin: 1.25rem 0;">or sign up with</div>
+
+      <!-- Google -->
+      <button class="auth-btn auth-btn--google" onclick="signInWithGoogle()" id="btnGoogle">
+        <svg class="google-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
+          <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+          <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+          <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+        </svg>
+        Continue with Google
+      </button>
+
+      <!-- Login Link -->
+      <div class="auth-footer" style="margin-top: 1.25rem;">
+        Already have an account? <a href="/login.html">Login</a>
+      </div>
+
+      <div class="auth-secure">
+        🔒 Secured with Firebase Authentication
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+
+  <script src="/js/firebase-config.js"></script>
+  <script src="/js/auth.js"></script>
+
+  <script>
+    redirectIfLoggedIn();
+
+    // ── Handle Signup ──────────────────────────────────────
+    function handleSignup(e) {
+      e.preventDefault();
+      document.getElementById('authError').classList.add('hidden');
+
+      const name = document.getElementById('signupName').value.trim();
+      const email = document.getElementById('signupEmail').value.trim();
+      const password = document.getElementById('signupPassword').value;
+      const confirm = document.getElementById('signupConfirm').value;
+
+      if (!name || !email || !password || !confirm) {
+        showAuthToast('Please fill in all fields.', 'warning');
+        return;
+      }
+      if (password !== confirm) {
+        showAuthToast('Passwords do not match.', 'error');
+        return;
+      }
+      if (password.length < 6) {
+        showAuthToast('Password must be at least 6 characters.', 'error');
+        return;
+      }
+
+      signUpWithEmail(name, email, password);
+    }
+
+    // ── Password Strength Checker ──────────────────────────
+    function checkPasswordStrength(pw) {
+      let score = 0;
+      if (pw.length >= 6) score++;
+      if (pw.length >= 8) score++;
+      if (/[A-Z]/.test(pw) && /[a-z]/.test(pw)) score++;
+      if (/[0-9]/.test(pw) && /[^A-Za-z0-9]/.test(pw)) score++;
+
+      const bars = ['str1', 'str2', 'str3', 'str4'];
+      const labels = ['', 'Weak', 'Fair', 'Good', 'Strong'];
+      const colors = ['', 'weak', 'medium', 'medium', 'strong'];
+
+      bars.forEach((id, i) => {
+        const bar = document.getElementById(id);
+        bar.className = 'password-strength__bar';
+        if (i < score) bar.classList.add(colors[score]);
+      });
+
+      document.getElementById('strengthText').textContent = pw.length > 0 ? labels[score] || '' : '';
+    }
+
+    // ── Toggle Password ────────────────────────────────────
+    function togglePassword(inputId, btn) {
+      const input = document.getElementById(inputId);
+      input.type = input.type === 'password' ? 'text' : 'password';
+      btn.textContent = input.type === 'password' ? '👁️' : '🙈';
+    }
+
+    // ── Background Icons ───────────────────────────────────
+    (function() {
+      const icons = ['💊', '🏥', '💉', '🩺', '🧬', '🩹', '⚕️', '🔬', '🧪', '❤️'];
+      const c = document.getElementById('bgIcons');
+      for (let i = 0; i < 15; i++) {
+        const s = document.createElement('span');
+        s.textContent = icons[i % icons.length];
+        s.style.left = Math.random() * 100 + '%';
+        s.style.animationDelay = Math.random() * 15 + 's';
+        s.style.animationDuration = (15 + Math.random() * 10) + 's';
+        s.style.fontSize = (1 + Math.random() * 1.5) + 'rem';
+        c.appendChild(s);
+      }
+    })();
+  </script>
+</body>
+</html>

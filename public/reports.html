@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MediCart | Reports</title>
+  <link rel="stylesheet" href="/css/global.css">
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+  <style>
+    .report-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:var(--space-md);margin-bottom:var(--space-xl);}
+    .rp-stat{padding:1rem;display:flex;align-items:center;gap:0.75rem;}
+    .rp-stat__icon{width:42px;height:42px;border-radius:var(--radius-lg);display:flex;align-items:center;justify-content:center;font-size:1.125rem;flex-shrink:0;}
+    .rp-stat__val{font-family:var(--font-display);font-size:1.375rem;font-weight:800;color:var(--gray-800);}
+    .rp-stat__lbl{font-size:0.75rem;color:var(--gray-500);}
+    .report-grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-lg);margin-bottom:var(--space-xl);}
+    .report-card{padding:var(--space-lg);}
+    .report-card__header{display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-md);}
+    .report-card__title{font-family:var(--font-display);font-weight:700;font-size:1rem;color:var(--gray-800);display:flex;align-items:center;gap:0.5rem;}
+    .export-bar{display:flex;gap:var(--space-sm);margin-bottom:var(--space-xl);flex-wrap:wrap;}
+    .gst-table{width:100%;border-collapse:collapse;margin-top:var(--space-md);border-radius:var(--radius-lg);overflow:hidden;}
+    .gst-table th{padding:0.625rem 1rem;font-size:0.7rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;text-align:left;background:var(--gray-100);color:var(--gray-600);}
+    .gst-table td{padding:0.5rem 1rem;font-size:0.85rem;color:var(--gray-700);border-bottom:1px solid var(--gray-100);}
+    .gst-table tfoot td{font-weight:700;background:var(--primary-50);color:var(--primary-700);border-top:2px solid var(--primary-200);}
+    .gst-table tbody tr:hover{background:var(--gray-50);}
+    @media(max-width:1024px){.report-grid{grid-template-columns:1fr;}}
+    @media(max-width:480px){.gst-table{font-size:0.75rem;}.gst-table th,.gst-table td{padding:0.5rem;}}
+  </style>
+</head>
+<body>
+  <div class="toast-container" id="toastContainer"></div>
+  <div class="app-layout" id="appRoot">
+    <div id="pageContent">
+      <div class="report-stats">
+        <div class="glass-card rp-stat animate-fadeInUp delay-1"><div class="rp-stat__icon" style="background:#d1fae5;">💰</div><div><div class="rp-stat__val" id="rpRevenue">₹0</div><div class="rp-stat__lbl">Total Revenue</div></div></div>
+        <div class="glass-card rp-stat animate-fadeInUp delay-2"><div class="rp-stat__icon" style="background:#dbeafe;">🧾</div><div><div class="rp-stat__val" id="rpInvoices">0</div><div class="rp-stat__lbl">Total Invoices</div></div></div>
+        <div class="glass-card rp-stat animate-fadeInUp delay-3"><div class="rp-stat__icon" style="background:#fef3c7;">📊</div><div><div class="rp-stat__val" id="rpToday">₹0</div><div class="rp-stat__lbl">Today's Sales</div></div></div>
+        <div class="glass-card rp-stat animate-fadeInUp delay-4"><div class="rp-stat__icon" style="background:#ede9fe;">📈</div><div><div class="rp-stat__val" id="rpAvg">₹0</div><div class="rp-stat__lbl">Avg per Invoice</div></div></div>
+      </div>
+
+      <div class="export-bar">
+        <button class="btn btn-secondary btn-sm" onclick="window.print()">🖨️ Print Report</button>
+        <button class="btn btn-secondary btn-sm" onclick="alert('PDF export coming soon!')">📥 Export PDF</button>
+        <button class="btn btn-secondary btn-sm" onclick="exportCSV()">📊 Export CSV</button>
+      </div>
+
+      <div class="report-grid">
+        <div class="glass-card glass-card--static report-card animate-fadeInUp">
+          <div class="report-card__header"><h3 class="report-card__title">📈 Revenue Trend</h3><span class="badge badge-primary">Weekly</span></div>
+          <div id="revTrendChart" style="height:280px;"></div>
+        </div>
+        <div class="glass-card glass-card--static report-card animate-fadeInUp">
+          <div class="report-card__header"><h3 class="report-card__title">📊 Sales by Category</h3></div>
+          <div id="catSalesChart" style="height:280px;"></div>
+        </div>
+      </div>
+
+      <div class="report-grid">
+        <div class="glass-card glass-card--static report-card animate-fadeInUp">
+          <div class="report-card__header"><h3 class="report-card__title">💹 Daily Sales</h3></div>
+          <div id="dailySalesChart" style="height:250px;"></div>
+        </div>
+        <div class="glass-card glass-card--static report-card animate-fadeInUp">
+          <div class="report-card__header"><h3 class="report-card__title">🧾 GST Summary</h3></div>
+          <table class="gst-table" id="gstTable">
+            <thead><tr><th>GST Rate</th><th>Taxable Amt</th><th>CGST</th><th>SGST</th><th>Total</th></tr></thead>
+            <tbody id="gstBody"><tr><td colspan="5" class="text-muted text-center">Loading...</td></tr></tbody>
+            <tfoot id="gstFoot"></tfoot>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+  <script src="/js/firebase-config.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/app.js"></script>
+  <script src="/js/utils.js"></script>
+  <script src="/js/api.js"></script>
+  <script>
+    if(!AuthManager.isLoggedIn()){window.location.href='/login';}
+    else{initApp('Reports','Analytics & Reports');}
+
+    async function loadReports(){
+      try{
+        const [statsRes,invRes,medRes]=await Promise.all([
+          fetchWithAuth('/api/invoices/stats/overview').then(r=>r.json()),
+          fetchWithAuth('/api/invoices?limit=100').then(r=>r.json()),
+          fetchWithAuth('/api/medicines/stats/overview').then(r=>r.json())
+        ]);
+
+        animateCounter(document.getElementById('rpRevenue'),Math.round(statsRes.totalRevenue||0),'₹');
+        animateCounter(document.getElementById('rpInvoices'),statsRes.totalInvoices||0);
+        animateCounter(document.getElementById('rpToday'),Math.round(statsRes.todaySales||0),'₹');
+        const avg=statsRes.totalInvoices?(statsRes.totalRevenue/statsRes.totalInvoices):0;
+        animateCounter(document.getElementById('rpAvg'),Math.round(avg),'₹');
+
+        // Revenue Trend
+        const days=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+        new ApexCharts(document.getElementById('revTrendChart'),{
+          chart:{type:'area',height:280,toolbar:{show:false},fontFamily:'Inter',animations:{enabled:true}},
+          series:[{name:'Revenue',data:[4200,5800,3900,7200,6100,8500,statsRes.todaySales||3200]}],
+          xaxis:{categories:days},stroke:{curve:'smooth',width:3},
+          fill:{type:'gradient',gradient:{shadeIntensity:1,opacityFrom:0.4,opacityTo:0.05}},
+          colors:['#10b981'],grid:{borderColor:'rgba(0,0,0,0.05)'},dataLabels:{enabled:false},
+          yaxis:{labels:{formatter:v=>'₹'+v.toLocaleString()}},
+          tooltip:{y:{formatter:v=>'₹'+v.toLocaleString('en-IN')}}
+        }).render();
+
+        // Category chart
+        if(medRes.categoryStats){
+          const colors=['#10b981','#0ea5e9','#f59e0b','#ef4444','#8b5cf6','#ec4899','#14b8a6','#f97316'];
+          new ApexCharts(document.getElementById('catSalesChart'),{
+            chart:{type:'pie',height:280,fontFamily:'Inter'},
+            series:medRes.categoryStats.map(c=>c.count),labels:medRes.categoryStats.map(c=>c._id),
+            colors:colors.slice(0,medRes.categoryStats.length),
+            legend:{position:'bottom',fontSize:'11px'},dataLabels:{enabled:true,style:{fontSize:'11px'}}
+          }).render();
+        }
+
+        // Daily sales bar
+        new ApexCharts(document.getElementById('dailySalesChart'),{
+          chart:{type:'bar',height:250,toolbar:{show:false},fontFamily:'Inter'},
+          series:[{name:'Bills',data:[3,5,2,7,4,8,statsRes.todayInvoiceCount||1]}],
+          xaxis:{categories:days},colors:['#8b5cf6'],
+          plotOptions:{bar:{borderRadius:6,columnWidth:'50%'}},
+          dataLabels:{enabled:false},grid:{borderColor:'rgba(0,0,0,0.05)'}
+        }).render();
+
+        // GST Table
+        const invoices=invRes.invoices||[];
+        const gstMap={};
+        invoices.forEach(inv=>{if(inv.status!=='completed')return;(inv.items||[]).forEach(item=>{
+          const rate=item.gstPercent||0;if(!gstMap[rate])gstMap[rate]={taxable:0,cgst:0,sgst:0};
+          const base=item.unitPrice*item.quantity*(1-((item.discountPercent||0)/100));
+          gstMap[rate].taxable+=base;gstMap[rate].cgst+=(item.cgst||0);gstMap[rate].sgst+=(item.sgst||0);
+        });});
+        const gstBody=document.getElementById('gstBody');
+        const rates=Object.keys(gstMap).sort((a,b)=>a-b);
+        let totalTax=0,totalCGST=0,totalSGST=0;
+        gstBody.innerHTML=rates.map(r=>{
+          const d=gstMap[r];totalTax+=d.taxable;totalCGST+=d.cgst;totalSGST+=d.sgst;
+          return`<tr><td>${r}%</td><td>₹${d.taxable.toFixed(2)}</td><td>₹${d.cgst.toFixed(2)}</td><td>₹${d.sgst.toFixed(2)}</td><td>₹${(d.cgst+d.sgst).toFixed(2)}</td></tr>`;
+        }).join('')||'<tr><td colspan="5" class="text-muted text-center">No data</td></tr>';
+        document.getElementById('gstFoot').innerHTML=`<tr><td>Total</td><td>₹${totalTax.toFixed(2)}</td><td>₹${totalCGST.toFixed(2)}</td><td>₹${totalSGST.toFixed(2)}</td><td>₹${(totalCGST+totalSGST).toFixed(2)}</td></tr>`;
+      }catch(e){console.error('Reports error:',e);}
+    }
+    loadReports();
+
+    function exportCSV(){
+      fetchWithAuth('/api/invoices?limit=500').then(r=>r.json()).then(data=>{
+        const inv=data.invoices||[];if(!inv.length){alert('No data');return;}
+        let csv='Invoice#,Date,Customer,Items,Total,Payment,Status\n';
+        inv.forEach(i=>{csv+=`${i.invoiceNumber},${new Date(i.createdAt).toLocaleDateString()},${i.customer?.name||'Walk-in'},${i.items?.length||0},${i.grandTotal},${i.paymentMethod},${i.status}\n`;});
+        const blob=new Blob([csv],{type:'text/csv'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='medicart_report.csv';a.click();
+      });
+    }
+  </script>
+</body>
+</html>

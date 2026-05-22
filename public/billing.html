@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="MediCart Billing System - Professional medical shop billing with GST, invoice generation, and inventory management">
+  <title>MediCart | Billing</title>
+  <link rel="stylesheet" href="/css/global.css">
+  <link rel="stylesheet" href="/css/billing.css">
+  <link rel="stylesheet" href="/css/invoice.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</head>
+<body>
+  <div id="toastContainer" class="toast-container"></div>
+
+  <div class="app-layout" id="appRoot">
+    <div id="pageContent">
+      <div class="billing-page">
+        <main class="billing-main">
+        <!-- Search Section -->
+        <section class="search-section" id="searchSection">
+          <div class="search-wrapper">
+            <span class="search-icon">🔍</span>
+            <input type="text" class="search-input" id="medicineSearch" placeholder="Search medicines by name, barcode, or category..." autocomplete="off" aria-label="Search medicines">
+            <div class="search-shortcuts"><span class="search-kbd">Ctrl+K</span></div>
+          </div>
+          <div class="search-results hidden" id="searchResults"></div>
+          <div class="category-filters" id="categoryFilters">
+            <button class="category-chip active" data-category="">All</button>
+            <button class="category-chip" data-category="Tablets">💊 Tablets</button>
+            <button class="category-chip" data-category="Capsules">💉 Capsules</button>
+            <button class="category-chip" data-category="Syrups">🧴 Syrups</button>
+            <button class="category-chip" data-category="Ointments">🧪 Ointments</button>
+            <button class="category-chip" data-category="Supplements">🍊 Supplements</button>
+            <button class="category-chip" data-category="First Aid">🩹 First Aid</button>
+            <button class="category-chip" data-category="Ayurvedic">🌿 Ayurvedic</button>
+          </div>
+        </section>
+
+        <!-- Cart Section -->
+        <section class="cart-section">
+          <div class="cart-header">
+            <h2 class="cart-header__title">🛒 Billing Cart <span class="cart-count" id="cartCount">0</span></h2>
+            <button class="btn btn-ghost btn-sm" id="btnClearCart" title="Clear all items">🗑️ Clear All</button>
+          </div>
+          <div class="cart-table-wrapper glass-card glass-card--static">
+            <table class="cart-table" id="cartTable">
+              <thead><tr><th>#</th><th>Medicine</th><th>Qty</th><th>Price (₹)</th><th>GST %</th><th>Disc %</th><th>Total (₹)</th><th></th></tr></thead>
+              <tbody id="cartBody"></tbody>
+            </table>
+            <div class="cart-empty" id="cartEmpty">
+              <div class="cart-empty__icon">🛒</div>
+              <div class="cart-empty__title">Your cart is empty</div>
+              <div class="cart-empty__text">Search and add medicines to begin billing</div>
+            </div>
+          </div>
+        </section>
+        </main>
+
+        <!-- Billing Sidebar -->
+        <aside class="billing-sidebar">
+          <div class="customer-section glass-card glass-card--static">
+            <h3 class="customer-section__title">👤 Customer Details</h3>
+            <div class="customer-fields">
+              <div class="form-group">
+                <label class="form-label" for="customerName">Name</label>
+                <input type="text" class="form-input" id="customerName" placeholder="Walk-in Customer" autocomplete="off">
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="customerPhone">Phone</label>
+                <input type="tel" class="form-input" id="customerPhone" placeholder="+91 98765 43210" maxlength="15" autocomplete="off">
+              </div>
+            </div>
+          </div>
+
+          <div class="bill-summary glass-card glass-card--static">
+            <h3 class="bill-summary__title">📊 Bill Summary</h3>
+            <div class="bill-summary__rows">
+              <div class="summary-row"><span class="summary-row__label">Subtotal</span><span class="summary-row__value" id="sumSubtotal">₹0.00</span></div>
+              <hr class="summary-divider">
+              <div class="summary-row summary-row--gst"><span class="summary-row__label">CGST</span><span class="summary-row__value" id="sumCGST">₹0.00</span></div>
+              <div class="summary-row summary-row--gst"><span class="summary-row__label">SGST</span><span class="summary-row__value" id="sumSGST">₹0.00</span></div>
+              <div class="summary-row"><span class="summary-row__label">Total GST</span><span class="summary-row__value" id="sumGST">₹0.00</span></div>
+              <hr class="summary-divider">
+              <div class="summary-row"><span class="summary-row__label">Discount</span><span class="summary-row__value text-danger" id="sumDiscount">-₹0.00</span></div>
+              <div class="summary-row"><span class="summary-row__label">Round Off</span><span class="summary-row__value" id="sumRoundOff">₹0.00</span></div>
+              <hr class="summary-divider">
+              <div class="summary-row summary-row--total"><span class="summary-row__label">Grand Total</span><span class="summary-row__value" id="sumGrandTotal">₹0.00</span></div>
+            </div>
+          </div>
+
+          <div class="payment-section glass-card glass-card--static">
+            <h3 class="payment-section__title">💳 Payment Method</h3>
+            <div class="payment-methods" id="paymentMethods">
+              <div class="payment-method active" data-method="cash"><span class="payment-method__icon">💵</span><span class="payment-method__label">Cash</span></div>
+              <div class="payment-method" data-method="upi"><span class="payment-method__icon">📱</span><span class="payment-method__label">UPI</span></div>
+              <div class="payment-method" data-method="card"><span class="payment-method__icon">💳</span><span class="payment-method__label">Card</span></div>
+            </div>
+            <div class="billing-actions">
+              <button class="btn btn-generate-bill" id="btnGenerateBill">🧾 Generate Bill & Print</button>
+              <div class="flex gap-sm">
+                <button class="btn btn-secondary w-full" id="btnHoldBill">⏸️ Hold</button>
+                <button class="btn btn-danger w-full" id="btnCancelBill">✖ Cancel</button>
+              </div>
+            </div>
+          </div>
+        </aside>
+      </div>
+
+      <!-- Billing Nav Floating Bar -->
+      <div class="billing-floating-bar">
+        <span class="billing-nav__time" id="liveTime"></span>
+        <button class="btn btn-secondary btn-sm" id="btnDraftSave" title="Save as draft">📋 Save Draft</button>
+        <button class="btn btn-secondary btn-sm" id="btnRecentBills" title="Recent bills">🧾 Recent</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Invoice Preview Modal -->
+  <div class="modal-overlay hidden" id="invoiceModal">
+    <div class="modal invoice-modal">
+      <div class="modal-header no-print">
+        <h3 class="modal-header__title">🧾 Invoice Preview</h3>
+        <button class="btn btn-ghost" id="btnCloseInvoice" aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body" id="invoiceContent"></div>
+      <div class="modal-footer no-print">
+        <button class="btn btn-secondary" id="btnShareWhatsApp">📱 WhatsApp</button>
+        <button class="btn btn-secondary" id="btnDownloadPDF">📥 Download PDF</button>
+        <button class="btn btn-primary" id="btnPrintInvoice">🖨️ Print Invoice</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Bills Modal -->
+  <div class="modal-overlay hidden" id="recentBillsModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-header__title">🧾 Recent Bills</h3>
+        <button class="btn btn-ghost" onclick="document.getElementById('recentBillsModal').classList.add('hidden')">✕</button>
+      </div>
+      <div class="modal-body" id="recentBillsList">
+        <p class="text-muted text-center">Loading...</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+  <script src="/js/firebase-config.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/app.js"></script>
+
+  <script>
+    if (!AuthManager.isLoggedIn()) { window.location.href = '/login'; }
+    else {
+      initApp('Billing', 'Point of Sale System');
+      const user = AuthManager.getUser();
+      if (user && user.role === 'viewer') {
+        document.addEventListener('DOMContentLoaded', () => {
+          const disableSelectors = [
+            '#medicineSearch', '#customerName', '#customerPhone',
+            '#btnClearCart', '#btnGenerateBill', '#btnHoldBill',
+            '#btnCancelBill', '#btnDraftSave'
+          ];
+          disableSelectors.forEach(sel => {
+            const el = document.querySelector(sel);
+            if (el) el.disabled = true;
+          });
+          const actions = document.querySelector('.billing-actions');
+          if (actions) {
+            actions.style.opacity = '0.5';
+            actions.style.pointerEvents = 'none';
+          }
+          const clearCart = document.getElementById('btnClearCart');
+          if (clearCart) {
+            clearCart.style.opacity = '0.5';
+            clearCart.style.pointerEvents = 'none';
+          }
+          const draftSave = document.getElementById('btnDraftSave');
+          if (draftSave) {
+            draftSave.style.opacity = '0.5';
+            draftSave.style.pointerEvents = 'none';
+          }
+        });
+      }
+    }
+  </script>
+
+  <script src="/js/utils.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/billing.js"></script>
+  <script src="/js/invoice.js"></script>
+</body>
+</html>

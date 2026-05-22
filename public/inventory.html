@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MediCart | Inventory</title>
+  <link rel="stylesheet" href="/css/global.css">
+  <style>
+    .inv-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:var(--space-md);margin-bottom:var(--space-xl);}
+    .inv-stat{padding:1rem;display:flex;align-items:center;gap:0.75rem;}
+    .inv-stat__icon{width:42px;height:42px;border-radius:var(--radius-lg);display:flex;align-items:center;justify-content:center;font-size:1.125rem;flex-shrink:0;}
+    .inv-stat__val{font-family:var(--font-display);font-size:1.375rem;font-weight:800;color:var(--gray-800);}
+    .inv-stat__lbl{font-size:0.75rem;color:var(--gray-500);}
+    .toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-lg);flex-wrap:wrap;gap:var(--space-sm);}
+    .toolbar__left{display:flex;gap:var(--space-sm);flex-wrap:wrap;align-items:center;}
+    .toolbar-input{padding:0.5rem 1rem;border:1.5px solid var(--gray-200);border-radius:var(--radius-full);font-size:0.85rem;background:var(--bg-secondary);outline:none;min-width:220px;font-family:var(--font-primary);color:var(--gray-800);transition:border-color var(--transition-fast), box-shadow var(--transition-fast);}
+    .toolbar-input:focus{border-color:var(--primary-400);box-shadow:0 0 0 3px rgba(16,185,129,0.1);}
+    .toolbar-input:hover{border-color:var(--gray-300);}
+    .view-toggle{display:flex;border:1.5px solid var(--gray-200);border-radius:var(--radius-lg);overflow:hidden;flex-shrink:0;}
+    .view-btn{padding:0.4rem 0.75rem;border:none;background:var(--bg-secondary);cursor:pointer;font-size:0.8rem;color:var(--gray-600);transition:all var(--transition-fast);}
+    .view-btn:hover{background:var(--gray-100);}
+    .view-btn.active{background:var(--primary-500);color:#fff;}
+    .inv-table-wrap{overflow-x:auto;border-radius:var(--radius-xl);}
+    .inv-table{width:100%;border-collapse:collapse;}
+    .inv-table thead{background:linear-gradient(135deg,var(--primary-600),var(--primary-700));color:#fff;}
+    .inv-table th{padding:0.75rem 1rem;font-size:0.7rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;text-align:left;white-space:nowrap;}
+    .inv-table th:first-child{border-radius:var(--radius-xl) 0 0 0;}
+    .inv-table th:last-child{border-radius:0 var(--radius-xl) 0 0;}
+    .inv-table td{padding:0.625rem 1rem;font-size:0.85rem;color:var(--gray-700);border-bottom:1px solid var(--gray-100);vertical-align:middle;}
+    .inv-table tbody tr{transition:background var(--transition-fast);}
+    .inv-table tbody tr:hover{background:var(--primary-50);}
+    .inv-table tbody tr:last-child td:first-child{border-radius:0 0 0 var(--radius-xl);}
+    .inv-table tbody tr:last-child td:last-child{border-radius:0 0 var(--radius-xl) 0;}
+    .stock-progress{width:80px;height:6px;background:var(--gray-200);border-radius:var(--radius-full);overflow:hidden;display:inline-block;vertical-align:middle;margin-left:0.5rem;}
+    .stock-progress__bar{height:100%;border-radius:var(--radius-full);transition:width 0.5s ease;}
+    .expiry-countdown{display:inline-flex;align-items:center;gap:0.25rem;font-size:0.75rem;font-weight:600;white-space:nowrap;}
+    .glow-alert{animation:glowPulse 2s infinite;}
+    @media(max-width:768px){
+      .inv-stats{grid-template-columns:1fr 1fr;}
+      .toolbar-input{min-width:160px;}
+    }
+    @media(max-width:480px){
+      .inv-stats{grid-template-columns:1fr;}
+      .view-toggle{display:none;}
+    }
+  </style>
+</head>
+<body>
+  <div class="toast-container" id="toastContainer"></div>
+  <div class="app-layout" id="appRoot">
+    <div id="pageContent">
+      <div class="inv-stats" id="invStats">
+        <div class="glass-card inv-stat animate-fadeInUp delay-1"><div class="inv-stat__icon" style="background:#d1fae5;">📦</div><div><div class="inv-stat__val" id="totalItems">0</div><div class="inv-stat__lbl">Total Items</div></div></div>
+        <div class="glass-card inv-stat animate-fadeInUp delay-2"><div class="inv-stat__icon" style="background:#dcfce7;">✅</div><div><div class="inv-stat__val" id="inStock">0</div><div class="inv-stat__lbl">In Stock</div></div></div>
+        <div class="glass-card inv-stat animate-fadeInUp delay-3"><div class="inv-stat__icon" style="background:#fef3c7;">⚠️</div><div><div class="inv-stat__val" id="lowStock">0</div><div class="inv-stat__lbl">Low Stock</div></div></div>
+        <div class="glass-card inv-stat animate-fadeInUp delay-4"><div class="inv-stat__icon" style="background:#fee2e2;">🚫</div><div><div class="inv-stat__val" id="outStock">0</div><div class="inv-stat__lbl">Out of Stock</div></div></div>
+        <div class="glass-card inv-stat animate-fadeInUp delay-5"><div class="inv-stat__icon" style="background:#fce7f3;">⏰</div><div><div class="inv-stat__val" id="expiringSoon">0</div><div class="inv-stat__lbl">Expiring Soon</div></div></div>
+      </div>
+
+      <div class="toolbar">
+        <div class="toolbar__left">
+          <input type="text" class="toolbar-input" id="invSearch" placeholder="🔍 Search inventory...">
+          <select class="toolbar-input" id="invFilter" style="min-width:140px;cursor:pointer;"><option value="all">All Stock</option><option value="low">Low Stock</option><option value="out">Out of Stock</option><option value="expiring">Expiring Soon</option></select>
+        </div>
+        <div class="view-toggle"><button class="view-btn active" data-view="table">☰ Table</button><button class="view-btn" data-view="grid">⊞ Grid</button></div>
+      </div>
+
+      <div class="glass-card glass-card--static inv-table-wrap animate-fadeInUp" id="invTableWrap">
+        <table class="inv-table"><thead><tr><th>#</th><th>Medicine</th><th>Category</th><th>Stock</th><th>Price</th><th>Batch</th><th>Expiry</th><th>Status</th></tr></thead>
+        <tbody id="invBody"><tr><td colspan="8" class="text-center text-muted" style="padding:3rem;">Loading...</td></tr></tbody></table>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+  <script src="/js/firebase-config.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/app.js"></script>
+  <script src="/js/utils.js"></script>
+  <script src="/js/api.js"></script>
+  <script>
+    if(!AuthManager.isLoggedIn()){window.location.href='/login';}
+    else{initApp('Inventory','Stock Management');}
+
+    let allMeds=[];
+    async function loadInventory(){
+      try{
+        const data=await api.getMedicines(1,200);allMeds=data.medicines||[];
+        const low=allMeds.filter(m=>m.stock>0&&m.stock<=10).length;
+        const out=allMeds.filter(m=>m.stock<=0).length;
+        const exp=allMeds.filter(m=>{if(!m.expiryDate)return false;return(new Date(m.expiryDate)-new Date())/(86400000)<90;}).length;
+        animateCounter(document.getElementById('totalItems'),allMeds.length);
+        animateCounter(document.getElementById('inStock'),allMeds.length-out);
+        animateCounter(document.getElementById('lowStock'),low);
+        animateCounter(document.getElementById('outStock'),out);
+        animateCounter(document.getElementById('expiringSoon'),exp);
+        renderTable(allMeds);
+      }catch(e){document.getElementById('invBody').innerHTML='<tr><td colspan="8" class="text-center text-muted">Failed to load</td></tr>';}
+    }
+
+    function renderTable(meds){
+      const body=document.getElementById('invBody');
+      if(!meds.length){body.innerHTML='<tr><td colspan="8" class="text-center text-muted" style="padding:3rem;">No items found</td></tr>';return;}
+      body.innerHTML=meds.map((m,i)=>{
+        const pct=Math.min((m.stock/100)*100,100);
+        const clr=m.stock<=0?'var(--danger)':m.stock<=10?'var(--warning)':'var(--primary-500)';
+        const days=m.expiryDate?Math.round((new Date(m.expiryDate)-new Date())/86400000):999;
+        const expCls=days<0?'text-danger':days<90?'text-warning':'text-success';
+        const status=m.stock<=0?'<span class="badge badge-danger">Out</span>':m.stock<=10?'<span class="badge badge-warning">Low</span>':'<span class="badge badge-success">OK</span>';
+        return`<tr><td>${i+1}</td><td><strong>${m.name}</strong><br><span class="text-xs text-muted">${m.genericName||''}</span></td>
+        <td><span class="badge badge-primary">${m.category}</span></td>
+        <td>${m.stock}<div class="stock-progress"><div class="stock-progress__bar" style="width:${pct}%;background:${clr};"></div></div></td>
+        <td>₹${m.sellingPrice}</td><td class="text-xs">${m.batchNo||'-'}</td>
+        <td><span class="expiry-countdown ${expCls}">${days<0?'Expired':days<90?days+'d left':m.expiryDate?formatDate(m.expiryDate):'N/A'}</span></td>
+        <td>${status}</td></tr>`;
+      }).join('');
+    }
+    loadInventory();
+
+    document.getElementById('invSearch').addEventListener('input',function(){filterInv();});
+    document.getElementById('invFilter').addEventListener('change',function(){filterInv();});
+    function filterInv(){
+      const q=document.getElementById('invSearch').value.toLowerCase();
+      const f=document.getElementById('invFilter').value;
+      let filtered=allMeds.filter(m=>m.name.toLowerCase().includes(q)||m.genericName?.toLowerCase().includes(q));
+      if(f==='low')filtered=filtered.filter(m=>m.stock>0&&m.stock<=10);
+      else if(f==='out')filtered=filtered.filter(m=>m.stock<=0);
+      else if(f==='expiring')filtered=filtered.filter(m=>{if(!m.expiryDate)return false;return(new Date(m.expiryDate)-new Date())/86400000<90;});
+      renderTable(filtered);
+    }
+  </script>
+</body>
+</html>

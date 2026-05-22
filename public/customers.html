@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MediCart | Customers</title>
+  <link rel="stylesheet" href="/css/global.css">
+  <style>
+    .cust-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:var(--space-md);margin-bottom:var(--space-xl);}
+    .cust-stat{padding:1rem;display:flex;align-items:center;gap:0.75rem;}
+    .cust-stat__icon{width:42px;height:42px;border-radius:var(--radius-lg);display:flex;align-items:center;justify-content:center;font-size:1.125rem;flex-shrink:0;}
+    .cust-stat__val{font-family:var(--font-display);font-size:1.375rem;font-weight:800;color:var(--gray-800);}
+    .cust-stat__lbl{font-size:0.75rem;color:var(--gray-500);}
+    .cust-toolbar{display:flex;gap:var(--space-sm);margin-bottom:var(--space-lg);}
+    .cust-toolbar input{padding:0.5rem 1rem;border:1.5px solid var(--gray-200);border-radius:var(--radius-full);font-size:0.85rem;background:var(--bg-secondary);outline:none;min-width:250px;font-family:var(--font-primary);color:var(--gray-800);transition:border-color var(--transition-fast), box-shadow var(--transition-fast);}
+    .cust-toolbar input:focus{border-color:var(--primary-400);box-shadow:0 0 0 3px rgba(16,185,129,0.1);}
+    .cust-toolbar input:hover{border-color:var(--gray-300);}
+    .cust-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:var(--space-lg);}
+    .cust-card{padding:1.25rem;transition:all var(--transition-base);cursor:default;}
+    .cust-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-card-hover);}
+    .cust-card__header{display:flex;align-items:center;gap:0.75rem;margin-bottom:0.75rem;}
+    .cust-avatar{width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,var(--primary-500),var(--primary-700));display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:1.125rem;font-family:var(--font-display);flex-shrink:0;}
+    .cust-card__name{font-family:var(--font-display);font-weight:700;font-size:1rem;color:var(--gray-800);display:flex;align-items:center;gap:0.375rem;flex-wrap:wrap;}
+    .cust-card__phone{font-size:0.8rem;color:var(--gray-500);}
+    .cust-card__stats{display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid var(--gray-100);}
+    .cust-mini-stat__label{font-size:0.6875rem;color:var(--gray-400);text-transform:uppercase;letter-spacing:0.05em;}
+    .cust-mini-stat__value{font-family:var(--font-display);font-weight:700;font-size:1.125rem;color:var(--gray-800);}
+    .loyalty-badge{display:inline-flex;align-items:center;gap:0.25rem;font-size:0.65rem;padding:0.15rem 0.5rem;border-radius:var(--radius-full);font-weight:700;}
+    .loyalty-gold{background:linear-gradient(135deg,#fef3c7,#fde68a);color:#92400e;box-shadow:0 1px 3px rgba(251,191,36,0.2);}
+    .loyalty-silver{background:linear-gradient(135deg,#f1f5f9,#e2e8f0);color:#475569;}
+    .loyalty-bronze{background:linear-gradient(135deg,#fed7aa,#fdba74);color:#9a3412;}
+    .empty-state{text-align:center;padding:4rem 2rem;color:var(--gray-400);}
+    .empty-state__icon{font-size:4rem;margin-bottom:1rem;opacity:0.5;}
+    @media(max-width:768px){.cust-grid{grid-template-columns:1fr 1fr;}.cust-toolbar input{min-width:180px;}}
+    @media(max-width:480px){.cust-grid{grid-template-columns:1fr;}.cust-stats{grid-template-columns:1fr 1fr;}}
+  </style>
+</head>
+<body>
+  <div class="toast-container" id="toastContainer"></div>
+  <div class="app-layout" id="appRoot">
+    <div id="pageContent">
+      <div class="cust-stats" id="custStats">
+        <div class="glass-card cust-stat animate-fadeInUp delay-1"><div class="cust-stat__icon" style="background:#dbeafe;">👥</div><div><div class="cust-stat__val" id="totalCust">0</div><div class="cust-stat__lbl">Total Customers</div></div></div>
+        <div class="glass-card cust-stat animate-fadeInUp delay-2"><div class="cust-stat__icon" style="background:#d1fae5;">💰</div><div><div class="cust-stat__val" id="totalSpent">₹0</div><div class="cust-stat__lbl">Total Revenue</div></div></div>
+        <div class="glass-card cust-stat animate-fadeInUp delay-3"><div class="cust-stat__icon" style="background:#ede9fe;">📊</div><div><div class="cust-stat__val" id="avgSpend">₹0</div><div class="cust-stat__lbl">Avg Spend</div></div></div>
+      </div>
+      <div class="cust-toolbar"><input type="text" id="custSearch" placeholder="🔍 Search customers by name or phone..."></div>
+      <div class="cust-grid" id="custGrid"><div class="empty-state"><div class="empty-state__icon">👥</div><p>Loading customers...</p></div></div>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+  <script src="/js/firebase-config.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/app.js"></script>
+  <script src="/js/utils.js"></script>
+  <script src="/js/api.js"></script>
+  <script>
+    if(!AuthManager.isLoggedIn()){window.location.href='/login';}
+    else{initApp('Customers','Customer Management');}
+
+    let allCusts=[];
+    async function loadCustomers(){
+      try{
+        const res=await fetchWithAuth('/api/customers');const custs=await res.json();
+        allCusts=Array.isArray(custs)?custs:[];
+        const total=allCusts.length;
+        const spent=allCusts.reduce((s,c)=>s+(c.totalSpent||0),0);
+        animateCounter(document.getElementById('totalCust'),total);
+        animateCounter(document.getElementById('totalSpent'),Math.round(spent),'₹');
+        animateCounter(document.getElementById('avgSpend'),total?Math.round(spent/total):0,'₹');
+        renderCusts(allCusts);
+      }catch(e){document.getElementById('custGrid').innerHTML='<div class="empty-state"><div class="empty-state__icon">⚠️</div><p>Failed to load customers</p></div>';}
+    }
+
+    function getLoyalty(c){
+      if((c.totalPurchases||0)>=20||(c.totalSpent||0)>=10000)return{cls:'loyalty-gold',txt:'⭐ Gold'};
+      if((c.totalPurchases||0)>=10||(c.totalSpent||0)>=5000)return{cls:'loyalty-silver',txt:'🥈 Silver'};
+      if((c.totalPurchases||0)>=3)return{cls:'loyalty-bronze',txt:'🥉 Bronze'};
+      return null;
+    }
+
+    function renderCusts(custs){
+      const grid=document.getElementById('custGrid');
+      if(!custs.length){grid.innerHTML='<div class="empty-state"><div class="empty-state__icon">👥</div><p>No customers found. Customers are created automatically when bills are generated.</p></div>';return;}
+      grid.innerHTML=custs.map((c,i)=>{
+        const initial=(c.name||'?')[0].toUpperCase();
+        const loyalty=getLoyalty(c);
+        return`<div class="glass-card cust-card animate-fadeInUp delay-${Math.min(i%6+1,6)}">
+          <div class="cust-card__header">
+            <div class="cust-avatar">${initial}</div>
+            <div>
+              <div class="cust-card__name">${c.name||'Unknown'} ${loyalty?'<span class="loyalty-badge '+loyalty.cls+'">'+loyalty.txt+'</span>':''}</div>
+              <div class="cust-card__phone">📞 ${c.phone||'N/A'}</div>
+            </div>
+          </div>
+          <div class="cust-card__stats">
+            <div><div class="cust-mini-stat__label">Purchases</div><div class="cust-mini-stat__value">${c.totalPurchases||0}</div></div>
+            <div><div class="cust-mini-stat__label">Total Spent</div><div class="cust-mini-stat__value">₹${(c.totalSpent||0).toLocaleString('en-IN')}</div></div>
+          </div>
+        </div>`}).join('');
+    }
+    loadCustomers();
+
+    document.getElementById('custSearch').addEventListener('input',function(){
+      const q=this.value.toLowerCase();
+      renderCusts(allCusts.filter(c=>(c.name||'').toLowerCase().includes(q)||(c.phone||'').includes(q)));
+    });
+  </script>
+</body>
+</html>

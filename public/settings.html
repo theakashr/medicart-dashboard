@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MediCart | Settings</title>
+  <link rel="stylesheet" href="/css/global.css">
+  <style>
+    .settings-grid{display:grid;grid-template-columns:240px 1fr;gap:var(--space-xl);min-height:calc(100vh - 160px);}
+    .inv-table{width:100%;border-collapse:collapse;}
+    .inv-table thead{background:linear-gradient(135deg,var(--primary-600),var(--primary-700));color:#fff;}
+    .inv-table th{padding:0.625rem 0.875rem;font-size:0.7rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;text-align:left;white-space:nowrap;}
+    .inv-table th:first-child{border-radius:var(--radius-lg) 0 0 0;}
+    .inv-table th:last-child{border-radius:0 var(--radius-lg) 0 0;}
+    .inv-table td{padding:0.5rem 0.875rem;font-size:0.85rem;color:var(--gray-700);border-bottom:1px solid var(--gray-100);vertical-align:middle;}
+    .inv-table tbody tr{transition:background var(--transition-fast);}
+    .inv-table tbody tr:hover{background:var(--primary-50);}
+    .settings-nav{display:flex;flex-direction:column;gap:2px;}
+    .settings-link{display:flex;align-items:center;gap:0.625rem;padding:0.625rem 0.875rem;border-radius:var(--radius-lg);font-size:0.875rem;font-weight:500;color:var(--gray-600);cursor:pointer;transition:all var(--transition-fast);border:none;background:none;text-align:left;width:100%;}
+    .settings-link:hover{background:var(--gray-100);color:var(--gray-800);}
+    .settings-link.active{background:var(--primary-50);color:var(--primary-700);font-weight:600;box-shadow:inset 3px 0 0 var(--primary-500);}
+    .settings-link__icon{font-size:1.125rem;flex-shrink:0;}
+    .settings-panel{display:none;animation:fadeIn 0.2s ease-out;}
+    .settings-panel.active{display:block;}
+    .settings-section{margin-bottom:var(--space-xl);}
+    .settings-section__title{font-family:var(--font-display);font-weight:700;font-size:1.125rem;color:var(--gray-800);margin-bottom:0.25rem;}
+    .settings-section__desc{font-size:0.8125rem;color:var(--gray-500);margin-bottom:var(--space-lg);}
+    .settings-form{display:flex;flex-direction:column;gap:1.25rem;max-width:500px;}
+    .settings-card{padding:var(--space-lg);}
+    .theme-options{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--space-md);}
+    .theme-option{padding:1.25rem;border:2px solid var(--gray-200);border-radius:var(--radius-xl);cursor:pointer;transition:all var(--transition-fast);text-align:center;}
+    .theme-option:hover{border-color:var(--primary-300);transform:translateY(-2px);}
+    .theme-option:active{transform:translateY(0);}
+    .theme-option.active{border-color:var(--primary-500);box-shadow:0 0 0 3px rgba(16,185,129,0.12);}
+    .theme-option__preview{width:100%;height:48px;border-radius:var(--radius-md);margin-bottom:0.5rem;}
+    .theme-option__label{font-size:0.8125rem;font-weight:600;color:var(--gray-700);}
+    .color-swatches{display:flex;gap:0.625rem;flex-wrap:wrap;}
+    .color-swatch{width:36px;height:36px;border-radius:50%;cursor:pointer;border:3px solid transparent;transition:all var(--transition-fast);}
+    .color-swatch:hover{transform:scale(1.15);}
+    .color-swatch.active{border-color:var(--gray-800);box-shadow:0 0 0 2px #fff,0 0 0 4px var(--gray-400);}
+    .toggle-row{display:flex;align-items:center;justify-content:space-between;padding:0.75rem 0;border-bottom:1px solid var(--gray-100);}
+    .toggle-row:last-child{border-bottom:none;}
+    .toggle-row__label{font-size:0.875rem;font-weight:500;color:var(--gray-700);}
+    .toggle-row__desc{font-size:0.75rem;color:var(--gray-500);margin-top:0.125rem;}
+    .toggle-switch{width:44px;height:24px;background:var(--gray-200);border-radius:var(--radius-full);position:relative;cursor:pointer;border:none;transition:background var(--transition-base);flex-shrink:0;}
+    .toggle-switch::after{content:'';position:absolute;left:2px;top:2px;width:20px;height:20px;background:#fff;border-radius:50%;transition:transform var(--transition-base);box-shadow:var(--shadow-sm);}
+    .toggle-switch.on{background:var(--primary-500);}
+    .toggle-switch.on::after{transform:translateX(20px);}
+    .toggle-switch:hover{background:var(--gray-300);}
+    .toggle-switch.on:hover{background:var(--primary-600);}
+    .profile-header{display:flex;align-items:center;gap:var(--space-lg);margin-bottom:var(--space-xl);padding:var(--space-lg);border-radius:var(--radius-xl);background:linear-gradient(135deg,var(--primary-50),rgba(16,185,129,0.05));}
+    .profile-avatar{width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,var(--primary-500),var(--primary-700));display:flex;align-items:center;justify-content:center;color:#fff;font-size:1.75rem;font-weight:800;font-family:var(--font-display);flex-shrink:0;box-shadow:0 4px 16px rgba(5,150,105,0.2);}
+    .profile-avatar img{width:100%;height:100%;border-radius:50%;object-fit:cover;}
+    .profile-name{font-family:var(--font-display);font-size:1.25rem;font-weight:700;color:var(--gray-800);}
+    .profile-email{font-size:0.8125rem;color:var(--gray-500);}
+    .profile-role{margin-top:0.25rem;}
+    @media(max-width:768px){.settings-grid{grid-template-columns:1fr;}.theme-options{grid-template-columns:1fr 1fr;}}
+    @media(max-width:480px){.theme-options{grid-template-columns:1fr;}}
+  </style>
+</head>
+<body>
+  <div class="toast-container" id="toastContainer"></div>
+  <div class="app-layout" id="appRoot">
+    <div id="pageContent">
+      <div class="settings-grid">
+        <!-- Settings Navigation -->
+        <div>
+          <nav class="settings-nav glass-card glass-card--static" style="padding:0.625rem;">
+            <button class="settings-link active" data-panel="profile" onclick="switchPanel('profile',this)"><span class="settings-link__icon">👤</span>Profile</button>
+            <button class="settings-link" data-panel="store" onclick="switchPanel('store',this)"><span class="settings-link__icon">🏪</span>Store</button>
+            <button class="settings-link" data-panel="theme" onclick="switchPanel('theme',this)"><span class="settings-link__icon">🎨</span>Appearance</button>
+            <button class="settings-link" data-panel="users" onclick="switchPanel('users',this)"><span class="settings-link__icon">👥</span>Users</button>
+            <button class="settings-link" data-panel="notifications" onclick="switchPanel('notifications',this)"><span class="settings-link__icon">🔔</span>Notifications</button>
+            <button class="settings-link" data-panel="gst" onclick="switchPanel('gst',this)"><span class="settings-link__icon">📋</span>GST Config</button>
+          </nav>
+        </div>
+
+        <!-- Settings Panels -->
+        <div>
+          <!-- Profile -->
+          <div class="settings-panel active" id="panel-profile">
+            <div class="settings-section">
+              <div class="settings-section__title">Profile Settings</div>
+              <div class="settings-section__desc">Manage your account information</div>
+              <div class="profile-header" id="profileHeader">
+                <div class="profile-avatar" id="settingsAvatar">U</div>
+                <div><div class="profile-name" id="settingsName">User</div><div class="profile-email" id="settingsEmail">user@example.com</div><div class="profile-role"><span class="badge badge-primary">Admin</span></div></div>
+              </div>
+              <div class="glass-card glass-card--static settings-card">
+                <form class="settings-form" onsubmit="event.preventDefault();showToast('Profile settings are managed through Firebase Auth','info');">
+                  <div class="form-group"><label class="form-label">Display Name</label><input class="form-input" id="settingsNameInput" value="User"></div>
+                  <div class="form-group"><label class="form-label">Email</label><input class="form-input" id="settingsEmailInput" value="user@example.com" disabled></div>
+                  <button type="submit" class="btn btn-primary">Save Changes</button>
+                </form>
+              </div>
+            </div>
+          </div>
+
+          <!-- Store -->
+          <div class="settings-panel" id="panel-store">
+            <div class="settings-section">
+              <div class="settings-section__title">Store Settings</div>
+              <div class="settings-section__desc">Configure your pharmacy details</div>
+              <div class="glass-card glass-card--static settings-card">
+                <form class="settings-form" id="storeForm" onsubmit="event.preventDefault();saveStoreSettings();">
+                  <div class="form-group"><label class="form-label">Shop Name</label><input class="form-input" id="shopNameInput" placeholder="MediCart Pharmacy"></div>
+                  <div class="form-group"><label class="form-label">Address</label><textarea class="form-input" id="shopAddressInput" rows="2" placeholder="123 Health Street..." style="resize:vertical;"></textarea></div>
+                  <div class="form-group"><label class="form-label">Phone</label><input class="form-input" id="shopPhoneInput" placeholder="+91 98765 43210"></div>
+                  <div class="form-group"><label class="form-label">GSTIN</label><input class="form-input" id="shopGstinInput" placeholder="29ABCDE1234F1Z5"></div>
+                  <button type="submit" class="btn btn-primary">Save Store Settings</button>
+                </form>
+              </div>
+            </div>
+          </div>
+
+          <!-- Theme -->
+          <div class="settings-panel" id="panel-theme">
+            <div class="settings-section">
+              <div class="settings-section__title">Appearance</div>
+              <div class="settings-section__desc">Customize the look and feel</div>
+              <div class="glass-card glass-card--static settings-card" style="max-width:600px;">
+                <h4 style="font-weight:600;margin-bottom:var(--space-md);color:var(--gray-700);">Theme Mode</h4>
+                <div class="theme-options" style="margin-bottom:var(--space-xl);">
+                  <div class="theme-option" id="themeLight" onclick="setTheme('light')">
+                    <div class="theme-option__preview" style="background:linear-gradient(135deg,#f0fdf4,#ecfdf5);border:1px solid #e2e8f0;"></div>
+                    <div class="theme-option__label">☀️ Light</div>
+                  </div>
+                  <div class="theme-option" id="themeDark" onclick="setTheme('dark')">
+                    <div class="theme-option__preview" style="background:linear-gradient(135deg,#0f172a,#1e293b);border:1px solid #334155;"></div>
+                    <div class="theme-option__label">🌙 Dark</div>
+                  </div>
+                  <div class="theme-option" id="themeSystem" onclick="setTheme('system')">
+                    <div class="theme-option__preview" style="background:linear-gradient(135deg,#f0fdf4 50%,#0f172a 50%);border:1px solid #e2e8f0;"></div>
+                    <div class="theme-option__label">💻 System</div>
+                  </div>
+                </div>
+                <h4 style="font-weight:600;margin-bottom:var(--space-md);color:var(--gray-700);">Accent Color</h4>
+                <div class="color-swatches">
+                  <div class="color-swatch active" style="background:#10b981;" onclick="selectColor(this)" title="Emerald"></div>
+                  <div class="color-swatch" style="background:#0ea5e9;" onclick="selectColor(this)" title="Sky"></div>
+                  <div class="color-swatch" style="background:#8b5cf6;" onclick="selectColor(this)" title="Violet"></div>
+                  <div class="color-swatch" style="background:#ec4899;" onclick="selectColor(this)" title="Pink"></div>
+                  <div class="color-swatch" style="background:#f59e0b;" onclick="selectColor(this)" title="Amber"></div>
+                  <div class="color-swatch" style="background:#ef4444;" onclick="selectColor(this)" title="Red"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Users -->
+          <div class="settings-panel" id="panel-users">
+            <div class="settings-section">
+              <div class="settings-section__title">User Management</div>
+              <div class="settings-section__desc">Add and manage users who can access this system</div>
+
+              <!-- Add User Form -->
+              <div class="glass-card glass-card--static settings-card" style="margin-bottom:var(--space-lg);">
+                <h4 style="font-weight:600;margin-bottom:var(--space-md);color:var(--gray-700);">➕ Add New User</h4>
+                <form class="settings-form" id="addUserForm" onsubmit="addUser(event)">
+                  <div class="form-group">
+                    <label class="form-label">Full Name</label>
+                    <input class="form-input" id="newUserName" placeholder="Dr. Akash R" required>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Email Address</label>
+                    <input class="form-input" type="email" id="newUserEmail" placeholder="staff@medicart.com" required>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <input class="form-input" type="password" id="newUserPassword" placeholder="Min 6 characters" required minlength="6">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Role</label>
+                    <select class="form-input" id="newUserRole">
+                      <option value="staff">Staff</option>
+                      <option value="admin">Admin</option>
+                      <option value="viewer">Viewer (Read-only)</option>
+                    </select>
+                  </div>
+                  <button type="submit" class="btn btn-primary" id="btnAddUser">Create User</button>
+                </form>
+              </div>
+
+              <!-- Users List -->
+              <div class="glass-card glass-card--static settings-card">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-md);">
+                  <h4 style="font-weight:600;color:var(--gray-700);">👥 Registered Users</h4>
+                  <span class="text-sm text-muted" id="userCount">0 users</span>
+                </div>
+                <div style="overflow-x:auto;">
+                  <table class="inv-table" style="width:100%;" id="usersTable">
+                    <thead>
+                      <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>Provider</th>
+                        <th>Status</th>
+                        <th>Joined</th>
+                      </tr>
+                    </thead>
+                    <tbody id="usersBody">
+                      <tr><td colspan="6" class="text-center text-muted" style="padding:2rem;">Loading...</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Notifications -->
+          <div class="settings-panel" id="panel-notifications">
+            <div class="settings-section">
+              <div class="settings-section__title">Notifications</div>
+              <div class="settings-section__desc">Configure notification preferences</div>
+              <div class="glass-card glass-card--static settings-card" style="max-width:500px;">
+                <div class="toggle-row"><div><div class="toggle-row__label">Low Stock Alerts</div><div class="toggle-row__desc">Get notified when stock is low</div></div><button class="toggle-switch on" onclick="this.classList.toggle('on')"></button></div>
+                <div class="toggle-row"><div><div class="toggle-row__label">Expiry Alerts</div><div class="toggle-row__desc">Alerts for expiring medicines</div></div><button class="toggle-switch on" onclick="this.classList.toggle('on')"></button></div>
+                <div class="toggle-row"><div><div class="toggle-row__label">Daily Summary</div><div class="toggle-row__desc">End of day sales summary</div></div><button class="toggle-switch" onclick="this.classList.toggle('on')"></button></div>
+                <div class="toggle-row"><div><div class="toggle-row__label">New Bill Notification</div><div class="toggle-row__desc">Sound on new bill creation</div></div><button class="toggle-switch on" onclick="this.classList.toggle('on')"></button></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- GST -->
+          <div class="settings-panel" id="panel-gst">
+            <div class="settings-section">
+              <div class="settings-section__title">GST Configuration</div>
+              <div class="settings-section__desc">Manage GST rates and settings</div>
+              <div class="glass-card glass-card--static settings-card" style="max-width:500px;">
+                <div class="settings-form">
+                  <div class="form-group"><label class="form-label">Default GST Rate (%)</label><input class="form-input" type="number" value="12" id="defaultGst"></div>
+                  <div class="form-group"><label class="form-label">GSTIN Number</label><input class="form-input" id="gstinNumber" placeholder="29ABCDE1234F1Z5"></div>
+                  <div class="toggle-row" style="border:none;padding-top:0;"><div><div class="toggle-row__label">Include GST in Price</div><div class="toggle-row__desc">Prices shown inclusive of GST</div></div><button class="toggle-switch" onclick="this.classList.toggle('on')"></button></div>
+                  <button class="btn btn-primary" onclick="showToast('GST settings saved!','success')">Save GST Settings</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+  <script src="/js/firebase-config.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/app.js"></script>
+  <script src="/js/utils.js"></script>
+  <script src="/js/api.js"></script>
+  <script>
+    if(!AuthManager.isLoggedIn()){window.location.href='/login';}
+    else{
+      initApp('Settings','System Configuration');
+      const user = AuthManager.getUser();
+      if (user && user.role === 'viewer') {
+        document.addEventListener('DOMContentLoaded', () => {
+          // Hide Add New User form section
+          const addUserFormSection = document.querySelector('#addUserForm')?.closest('.settings-card');
+          if (addUserFormSection) addUserFormSection.style.display = 'none';
+
+          // Disable all inputs and select fields inside store settings, GST config and profile
+          const disableContainers = ['#panel-store', '#panel-gst', '#panel-profile'];
+          disableContainers.forEach(containerId => {
+            const container = document.querySelector(containerId);
+            if (container) {
+              container.querySelectorAll('input, textarea, select, button[type="submit"], button.btn-primary').forEach(el => {
+                el.disabled = true;
+              });
+            }
+          });
+        });
+      }
+    }
+
+    // Load user profile
+    const user=AuthManager.getUser();
+    if(user){
+      document.getElementById('settingsName').textContent=user.name||'User';
+      document.getElementById('settingsEmail').textContent=user.email||'';
+      document.getElementById('settingsNameInput').value=user.name||'';
+      document.getElementById('settingsEmailInput').value=user.email||'';
+      const avatar=document.getElementById('settingsAvatar');
+      if(user.photo){avatar.innerHTML=`<img src="${user.photo}" alt="${user.name}" referrerpolicy="no-referrer">`;}
+      else{avatar.textContent=(user.name||'U')[0].toUpperCase();}
+    }
+
+    // Load store config
+    fetchWithAuth('/api/shop-config').then(r=>r.json()).then(cfg=>{
+      document.getElementById('shopNameInput').value=cfg.name||'';
+      document.getElementById('shopAddressInput').value=cfg.address||'';
+      document.getElementById('shopPhoneInput').value=cfg.phone||'';
+      document.getElementById('shopGstinInput').value=cfg.gstin||'';
+      document.getElementById('gstinNumber').value=cfg.gstin||'';
+    }).catch(()=>{});
+
+    function switchPanel(id,btn){
+      document.querySelectorAll('.settings-panel').forEach(p=>p.classList.remove('active'));
+      document.querySelectorAll('.settings-link').forEach(l=>l.classList.remove('active'));
+      document.getElementById('panel-'+id).classList.add('active');
+      btn.classList.add('active');
+    }
+
+    function setTheme(mode){
+      document.querySelectorAll('.theme-option').forEach(o=>o.classList.remove('active'));
+      if(mode==='dark'){document.documentElement.dataset.theme='dark';localStorage.setItem('medicart-theme','dark');document.getElementById('themeDark').classList.add('active');}
+      else if(mode==='system'){const pref=window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';document.documentElement.dataset.theme=pref;localStorage.removeItem('medicart-theme');document.getElementById('themeSystem').classList.add('active');}
+      else{document.documentElement.dataset.theme='light';localStorage.setItem('medicart-theme','light');document.getElementById('themeLight').classList.add('active');}
+      showToast('Theme updated!','success');
+    }
+
+    // Init theme selection
+    const ct=localStorage.getItem('medicart-theme');
+    if(ct==='dark')document.getElementById('themeDark').classList.add('active');
+    else document.getElementById('themeLight').classList.add('active');
+
+    function selectColor(el){document.querySelectorAll('.color-swatch').forEach(s=>s.classList.remove('active'));el.classList.add('active');showToast('Accent color updated!','success');}
+    function saveStoreSettings(){showToast('Store settings are configured via .env file on the server','info');}
+  </script>
+</body>
+</html>

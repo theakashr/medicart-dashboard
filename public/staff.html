@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MediCart | Staff Management</title>
+  <link rel="stylesheet" href="/css/global.css">
+  <link rel="stylesheet" href="/css/staff.css">
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+</head>
+<body>
+  <div class="toast-container" id="toastContainer"></div>
+  <div class="app-layout" id="appRoot">
+    <div id="pageContent">
+
+      <!-- Stats Cards -->
+      <section class="staff-stats-grid" id="staffStatsGrid">
+        <div class="glass-card stat-card animate-fadeInUp delay-1">
+          <div class="stat-card__icon stat-card__icon--blue">👥</div>
+          <div>
+            <div class="stat-card__value" id="statTotalStaff">0</div>
+            <div class="stat-card__label">Total Staff</div>
+          </div>
+        </div>
+        <div class="glass-card stat-card animate-fadeInUp delay-2">
+          <div class="stat-card__icon stat-card__icon--green">✅</div>
+          <div>
+            <div class="stat-card__value" id="statActiveStaff">0</div>
+            <div class="stat-card__label">Active Today</div>
+          </div>
+        </div>
+        <div class="glass-card stat-card animate-fadeInUp delay-3">
+          <div class="stat-card__icon stat-card__icon--amber">📋</div>
+          <div>
+            <div class="stat-card__value" id="statPresentToday">0</div>
+            <div class="stat-card__label">Present Today</div>
+          </div>
+        </div>
+        <div class="glass-card stat-card animate-fadeInUp delay-4">
+          <div class="stat-card__icon stat-card__icon--red">⏸️</div>
+          <div>
+            <div class="stat-card__value" id="statSuspended">0</div>
+            <div class="stat-card__label">Suspended</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Toolbar -->
+      <section class="staff-toolbar glass-card glass-card--static animate-fadeInUp">
+        <div class="staff-toolbar__left">
+          <div class="search-box">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="staffSearch" placeholder="Search by name, email, phone..." class="form-input search-input">
+          </div>
+          <div class="filter-group">
+            <select id="filterRole" class="form-select filter-select">
+              <option value="">All Roles</option>
+              <option value="admin">Admin</option>
+              <option value="pharmacist">Pharmacist</option>
+              <option value="cashier">Cashier</option>
+              <option value="inventory_manager">Inventory Manager</option>
+              <option value="sales_staff">Sales Staff</option>
+            </select>
+            <select id="filterShift" class="form-select filter-select">
+              <option value="">All Shifts</option>
+              <option value="morning">Morning</option>
+              <option value="afternoon">Afternoon</option>
+              <option value="night">Night</option>
+              <option value="flexible">Flexible</option>
+            </select>
+            <select id="filterStatus" class="form-select filter-select">
+              <option value="">All Status</option>
+              <option value="active">Active</option>
+              <option value="suspended">Suspended</option>
+              <option value="inactive">Inactive</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn btn-primary" id="addStaffBtn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add Staff
+        </button>
+      </section>
+
+      <!-- Staff Table -->
+      <section class="staff-table-wrapper glass-card glass-card--static animate-fadeInUp">
+        <div class="staff-table-scroll">
+          <table class="staff-table" id="staffTable">
+            <thead>
+              <tr>
+                <th>Staff</th>
+                <th>Role</th>
+                <th>Contact</th>
+                <th>Shift</th>
+                <th>Salary</th>
+                <th>Status</th>
+                <th>Performance</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="staffTableBody">
+              <tr><td colspan="8" class="empty-state">Loading staff members...</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="staff-table-footer" id="staffTableFooter">
+          <span id="staffCount">0 members</span>
+          <div class="pagination" id="pagination"></div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+
+  <!-- Add/Edit Staff Modal -->
+  <div class="modal-overlay hidden" id="staffModal">
+    <div class="modal modal--lg">
+      <div class="modal-header">
+        <h2 class="modal-header__title" id="staffModalTitle">👤 Add Staff Member</h2>
+        <button class="btn btn-ghost btn-icon" onclick="closeStaffModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <form id="staffForm" class="staff-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label form-label--required">Full Name</label>
+              <input type="text" id="formName" class="form-input" required placeholder="Enter full name">
+            </div>
+            <div class="form-group">
+              <label class="form-label form-label--required">Email</label>
+              <input type="email" id="formEmail" class="form-input" required placeholder="email@example.com">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label form-label--required">Password</label>
+              <div class="password-input-wrap">
+                <input type="password" id="formPassword" class="form-input" required placeholder="Min 6 characters">
+                <button type="button" class="password-toggle" onclick="togglePasswordVisibility('formPassword')">👁️</button>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Phone Number</label>
+              <input type="tel" id="formPhone" class="form-input" placeholder="+91 98765 43210">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label form-label--required">Role</label>
+              <select id="formRole" class="form-select" required>
+                <option value="">Select role</option>
+                <option value="admin">Admin</option>
+                <option value="pharmacist">Pharmacist</option>
+                <option value="cashier">Cashier</option>
+                <option value="inventory_manager">Inventory Manager</option>
+                <option value="sales_staff">Sales Staff</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Shift</label>
+              <select id="formShift" class="form-select">
+                <option value="morning">Morning (9AM - 5PM)</option>
+                <option value="afternoon">Afternoon (1PM - 9PM)</option>
+                <option value="night">Night (9PM - 5AM)</option>
+                <option value="flexible">Flexible</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Salary (₹)</label>
+              <input type="number" id="formSalary" class="form-input" placeholder="0" min="0">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Joining Date</label>
+              <input type="date" id="formJoiningDate" class="form-input">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Address</label>
+            <textarea id="formAddress" class="form-textarea" placeholder="Enter address"></textarea>
+          </div>
+
+          <div class="permissions-section">
+            <h3 class="permissions-title">🔐 Permissions</h3>
+            <div class="permissions-grid">
+              <label class="permission-checkbox">
+                <input type="checkbox" id="permBilling" checked>
+                <span>Billing</span>
+              </label>
+              <label class="permission-checkbox">
+                <input type="checkbox" id="permInventory" checked>
+                <span>Inventory</span>
+              </label>
+              <label class="permission-checkbox">
+                <input type="checkbox" id="permReports">
+                <span>Reports</span>
+              </label>
+              <label class="permission-checkbox">
+                <input type="checkbox" id="permCustomers" checked>
+                <span>Customers</span>
+              </label>
+              <label class="permission-checkbox">
+                <input type="checkbox" id="permMedicines" checked>
+                <span>Medicines</span>
+              </label>
+              <label class="permission-checkbox">
+                <input type="checkbox" id="permSettings">
+                <span>Settings</span>
+              </label>
+              <label class="permission-checkbox">
+                <input type="checkbox" id="permStaffManagement">
+                <span>Staff Management</span>
+              </label>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeStaffModal()">Cancel</button>
+        <button class="btn btn-primary" id="saveStaffBtn">Save Staff</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Staff Profile Drawer -->
+  <div class="drawer-overlay hidden" id="profileDrawer">
+    <div class="drawer">
+      <div class="drawer-header">
+        <h2>Staff Profile</h2>
+        <button class="btn btn-ghost btn-icon" onclick="closeProfileDrawer()">✕</button>
+      </div>
+      <div class="drawer-body" id="profileDrawerBody">
+        <!-- Filled dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Attendance Modal -->
+  <div class="modal-overlay hidden" id="attendanceModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 class="modal-header__title">📅 Attendance History</h2>
+        <button class="btn btn-ghost btn-icon" onclick="closeAttendanceModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="attendance-controls">
+          <select id="attendanceMonth" class="form-select">
+            <option value="1">January</option><option value="2">February</option>
+            <option value="3">March</option><option value="4">April</option>
+            <option value="5">May</option><option value="6">June</option>
+            <option value="7">July</option><option value="8">August</option>
+            <option value="9">September</option><option value="10">October</option>
+            <option value="11">November</option><option value="12">December</option>
+          </select>
+          <select id="attendanceYear" class="form-select"></select>
+        </div>
+        <div id="attendanceList" class="attendance-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+  <script src="/js/firebase-config.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/app.js"></script>
+  <script src="/js/staff.js"></script>
+
+  <script>
+    if (!AuthManager.isLoggedIn()) { window.location.href = '/login'; }
+    else {
+      initApp('Staff Management', 'Manage your team members');
+      const user = AuthManager.getUser();
+      if (user && user.role === 'viewer') {
+        document.addEventListener('DOMContentLoaded', () => {
+          const addBtn = document.getElementById('addStaffBtn');
+          if (addBtn) addBtn.style.display = 'none';
+        });
+      }
+    }
+    document.addEventListener('DOMContentLoaded', () => StaffManager.init());
+  </script>
+</body>
+</html>
