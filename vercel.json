@@ -1,63 +1,52 @@
 {
-  "version": 2,
-  "builds": [
+  "rewrites": [
     {
-      "src": "public/**",
-      "use": "@vercel/static"
+      "source": "/api/(.*)",
+      "destination": "/api/index.js"
     },
     {
-      "src": "api/index.js",
-      "use": "@vercel/node"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "/api/index.js"
+      "source": "/billing",
+      "destination": "/public/billing.html"
     },
     {
-      "src": "/(.*\\.html)",
-      "dest": "/public/$1"
+      "source": "/login",
+      "destination": "/public/login.html"
     },
     {
-      "src": "/billing",
-      "dest": "/public/billing.html"
+      "source": "/signup",
+      "destination": "/public/signup.html"
     },
     {
-      "src": "/login",
-      "dest": "/public/login.html"
+      "source": "/medicines",
+      "destination": "/public/medicines.html"
     },
     {
-      "src": "/signup",
-      "dest": "/public/signup.html"
+      "source": "/inventory",
+      "destination": "/public/inventory.html"
     },
     {
-      "src": "/medicines",
-      "dest": "/public/medicines.html"
+      "source": "/customers",
+      "destination": "/public/customers.html"
     },
     {
-      "src": "/inventory",
-      "dest": "/public/inventory.html"
+      "source": "/reports",
+      "destination": "/public/reports.html"
     },
     {
-      "src": "/customers",
-      "dest": "/public/customers.html"
+      "source": "/settings",
+      "destination": "/public/settings.html"
     },
     {
-      "src": "/reports",
-      "dest": "/public/reports.html"
+      "source": "/staff",
+      "destination": "/public/staff.html"
     },
     {
-      "src": "/settings",
-      "dest": "/public/settings.html"
+      "source": "/",
+      "destination": "/public/index.html"
     },
     {
-      "src": "/staff",
-      "dest": "/public/staff.html"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/public/$1"
+      "source": "/(.*)",
+      "destination": "/public/$1"
     }
   ]
 }
